@@ -50,3 +50,46 @@ else:
     # Create a connection
     cursor_target = makeSnowflakeConnection(connectionName)
     print("Snowflake Connection Established (Non-SSO) :", connectionName)
+
+# Initiate cursor
+cs = cursor_target.cursor()
+
+# Initiate Logger
+for logger_name in ['snowflake.connector', 'botocore', 'boto3']:
+    logger = logging.getLogger(logger_name)
+    logger.setLevel(logging.DEBUG)
+    # Change Logger File if needed
+    ch = logging.FileHandler('./Output/LoggerDEBUG.log')
+    ch.setLevel(logging.DEBUG)
+    ch.setFormatter(SecretDetector(
+        '%(asctime)s - %(threadName)s %(filename)s:%(lineno)d - %(funcName)s() - %(levelname)s - %(message)s'))
+    logger.addHandler(ch)
+
+# Check Output Logging File Name
+mode = 'w'
+if(append_master_csv_log.strip().upper() == 'TRUE'):
+    OutputLog = "MASTER_LOG.csv"
+    mode = 'a'
+else:
+    value = datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
+    OutputLog = str(value)+"_log.csv"
+    mode = 'w'
+
+# Read all execution file names
+with open('./'+inputFileList, mode='r', encoding='utf-8-sig') as infile:
+    reader = infile.read()
+infile.close()
+
+# List of all Files
+executionFileNames = reader.split('\n')
+executedTotal = 0
+executionFailure = 0
+
+dontAddHeader = False
+try:
+    with open('./output/'+OutputLog, mode='r', encoding='utf-8') as fd2:
+        readFile = fd2.read()
+        if(len(readFile.strip()) > 0):
+            dontAddHeader = True
+except:
+    dontAddHeader = False
