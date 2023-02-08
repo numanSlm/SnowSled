@@ -93,3 +93,42 @@ try:
             dontAddHeader = True
 except:
     dontAddHeader = False
+    
+
+# Write into Output file
+with open('./output/'+OutputLog, mode=mode, encoding='utf-8', newline='') as fd:
+    writer = csv.writer(fd, delimiter=',')
+    if(dontAddHeader == False):
+        writer.writerow(["File,Name", "ObjectName", "Execution",
+                         "Timestamp", "ErrorLog", "Failed_SFQID", "ExecutionTime(mins)"])
+
+    # Iteragte through each file
+    for fileName in executionFileNames:
+        skipFile = False
+        errorsInFile = 0
+        if(fileName.startswith('#')):
+            print("Skipped ", fileName)
+            skipFile = True
+        else:
+            # add things here
+            if(full_path_provided.strip().upper() == 'FALSE'):
+                input_path = "./input/"+fileName
+            else:
+                input_path = fileName
+
+            if(path.exists(input_path)):
+                with open(input_path, mode='r', encoding='utf-8') as readfile:
+                    # Read Data inside file
+                    fileContent = readfile.read()
+
+                # Split on each semicolon
+                if(split_on_parameter.upper().strip() == "TRUE"):
+                    sqlQueries = fileContent.split(splitting_parameter)
+                else:
+                    sqlQueries = []
+                    sqlQueries.append(fileContent)
+                print("-------------------------------------------")
+                print("Executing ", fileName)
+
+                # Used to check if error is generated
+                error_flag = False
