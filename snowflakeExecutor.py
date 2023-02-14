@@ -132,3 +132,35 @@ with open('./output/'+OutputLog, mode=mode, encoding='utf-8', newline='') as fd:
 
                 # Used to check if error is generated
                 error_flag = False
+
+                # Iterate through each query
+                for sql in sqlQueries:
+                    sql = sql.strip()
+                    codeTerminated = False
+                    # tempTime used in Logs for estimated query execution time
+                    tempTime = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+                    # Remove comments
+                    sql = sqlparse.format(sql, strip_comments=True).strip()
+
+                    # Check for empty string
+                    if(len(sql) > 0):
+
+                        # Increment Total SQL Executed Queries Count
+                        executedTotal = executedTotal+1
+
+                        # Check if variables need to be substituted
+                        if(variable_substitution.strip().upper() == 'TRUE'):
+                            sql = substitueVariable(sql)
+
+                        # Execute the sql query
+
+                        try:
+                            startTime = time.time()
+                            output = cs.execute(sql)
+                            endTime = time.time()
+                            totalExecutionTime = (endTime-startTime)/60
+                            print("Elapsed time(in min):", totalExecutionTime)
+                            # Write into file
+                            writer.writerow(
+                                [fileName, sql, "SUCCESS", str(tempTime), "", "", totalExecutionTime])
