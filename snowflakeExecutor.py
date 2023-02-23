@@ -93,7 +93,7 @@ try:
             dontAddHeader = True
 except:
     dontAddHeader = False
-    
+
 
 # Write into Output file
 with open('./output/'+OutputLog, mode=mode, encoding='utf-8', newline='') as fd:
@@ -164,3 +164,67 @@ with open('./output/'+OutputLog, mode=mode, encoding='utf-8', newline='') as fd:
                             # Write into file
                             writer.writerow(
                                 [fileName, sql, "SUCCESS", str(tempTime), "", "", totalExecutionTime])
+
+                        except snowflake.connector.errors.ProgrammingError as e:
+                            # Capture the error (Remove extra tabs and newline from error msg)
+                            error = e.msg.replace('\n', ' ')
+                            error = error.replace('\t', ' ')
+
+                            # Increment failure count
+                            executionFailure = executionFailure+1
+                            errorsInFile = errorsInFile+1
+                            # Write into file
+                            writer.writerow([fileName, sql, "FAIL", str(
+                                tempTime), str(error), str(e.sfqid)])
+                            error_flag = True
+
+                            # Display errors if show_errors_on_console is true
+                            if(show_errors_on_console.strip().upper() == "TRUE"):
+                                print("----------------------------------")
+                                print("ERROR IN FILE: ", fileName)
+                                print("----------------------------------")
+                                print("SQL QUERY: ", sql)
+                                print("----------------------------------")
+                                print("QUERY ID: ", e.sfqid)
+                                print("----------------------------------")
+                                print("ERROR MESSAGE:", error)
+                                print("----------------------------------")
+
+                    # Check condition to break execution based on config property
+                    if(continue_on_failure.strip().upper() == "FALSE" and error_flag == True):
+
+                        # Unusual termination of code
+                        codeTerminated = True
+                        break
+                if(continue_on_failure.strip().upper() == "FALSE" and error_flag == True):
+                    # Unusual termination of code
+                    codeTerminated = True
+                    break
+
+                if(errorsInFile == 0 and skipFile == False):
+                    print(fileName, "Executed Succesfully.")
+                if(codeTerminated == False and errorsInFile > 0 and skipFile == False):
+                    print("For File:", fileName, "A total of", errorsInFile,
+                          "queries did not run successfully. ")
+                print("-------------------------------------------")
+            else:
+                # Can add counters here if required
+                print(input_path, " PATH not found")
+    if(codeTerminated == True):
+        print(fileName, "Execution Terminated. (Please check logs)")
+    print("-----------------------------------------------------------------------------")
+
+print("\tFind Logs for this execution at: ", OutputLog.strip())
+print("-----------------------------------------------------------------------------")
+print("\t\t\tExecution Stats: ", executedTotal -
+      executionFailure, "/", executedTotal)
+print("\t\t\tFailed Queries: ", executionFailure)
+print("-----------------------------------------------------------------------------")
+print("-------- Thank you for using Snowflake Python Executor --------")
+print("-----------------------------------------------------------------------------")
+
+# Close cursor
+cs.close()
+
+# Close File
+fd.close()
